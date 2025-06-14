@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Sfondo scuro per far risaltare la luce -->
+  <rect x="32" y="48" width="192" height="160" rx="16" fill="#1C1C1C" stroke="black" stroke-width="4" />
+
+  <!-- Fasci di luce -->
+  <line x1="128" y1="64" x2="128" y2="100" stroke="#FFFF33" stroke-width="6" stroke-linecap="round" />
+  <line x1="100" y1="72" x2="116" y2="104" stroke="#FFFF33" stroke-width="6" stroke-linecap="round" />
+  <line x1="156" y1="72" x2="140" y2="104" stroke="#FFFF33" stroke-width="6" stroke-linecap="round" />
+  <circle cx="128" cy="110" r="12" fill="#FFF176" stroke="white" stroke-width="2" />
+
+  <!-- Riflesso -->
+  <ellipse cx="128" cy="150" rx="50" ry="10" fill="#FFF176" opacity="0.3" />
+
+  <!-- Testo -->
+  <text x="128" y="230" font-family="Arial Black" font-size="20" fill="white" text-anchor="middle">
+    LIGHT EFFECTS
+  </text>
+</svg>

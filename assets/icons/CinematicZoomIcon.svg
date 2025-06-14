@@ -1,0 +1,44 @@
+// components/icons/CinematicZoomIcon.tsx
+import React from 'react';
+import { Svg, Rect, Line, Text } from 'react-native-svg';
+
+export default function CinematicZoomIcon({ size = 128 }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 256 256">
+      {/* Clapperboard Top */}
+      <Rect x="48" y="32" width="160" height="40" rx="6" fill="#2F2F2F" stroke="black" strokeWidth="4" />
+      <Line x1="56" y1="32" x2="80" y2="72" stroke="white" strokeWidth="6" />
+      <Line x1="88" y1="32" x2="112" y2="72" stroke="white" strokeWidth="6" />
+      <Line x1="120" y1="32" x2="144" y2="72" stroke="white" strokeWidth="6" />
+      <Line x1="152" y1="32" x2="176" y2="72" stroke="white" strokeWidth="6" />
+
+      {/* Clapperboard Bottom */}
+      <Rect x="48" y="72" width="160" height="96" rx="8" fill="#FF4D4D" stroke="black" strokeWidth="4" />
+
+      {/* Motion lines */}
+      <Line x1="24" y1="96" x2="40" y2="96" stroke="black" strokeWidth="4" />
+      <Line x1="28" y1="80" x2="44" y2="84" stroke="black" strokeWidth="4" />
+      <Line x1="28" y1="112" x2="44" y2="108" stroke="black" strokeWidth="4" />
+
+      {/* Testo */}
+      <Text
+        x="128"
+        y="200"
+        fontSize="20"
+        fill="black"
+        textAnchor="middle"
+      >
+        CINEMATIC
+      </Text>
+      <Text
+        x="128"
+        y="230"
+        fontSize="20"
+        fill="black"
+        textAnchor="middle"
+      >
+        ZOOM
+      </Text>
+    </Svg>
+  );
+}

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- VHS Tape Body -->
+  <rect x="40" y="80" width="176" height="96" rx="12" fill="#222" stroke="black" stroke-width="4" />
+
+  <!-- Tape Spools -->
+  <circle cx="80" cy="128" r="20" fill="#444" stroke="black" stroke-width="4" />
+  <circle cx="176" cy="128" r="20" fill="#444" stroke="black" stroke-width="4" />
+
+  <!-- Label in the center -->
+  <rect x="108" y="112" width="40" height="32" rx="4" fill="#FF4D4D" stroke="black" stroke-width="3" />
+
+  <!-- Text -->
+  <text x="128" y="230" font-family="Arial Black" font-size="20" fill="black" text-anchor="middle">
+    VHS EFFECT
+  </text>
+</svg>

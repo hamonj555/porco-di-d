@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Sfondo leggero -->
+  <rect x="32" y="48" width="192" height="160" rx="16" fill="#FFFDE7" stroke="black" stroke-width="4" />
+
+  <!-- Emoji 1: faccina che ride -->
+  <circle cx="80" cy="100" r="24" fill="#FFEB3B" stroke="black" stroke-width="2" />
+  <circle cx="72" cy="94" r="3" fill="black" />
+  <circle cx="88" cy="94" r="3" fill="black" />
+  <path d="M72 106 Q80 112 88 106" stroke="black" stroke-width="2" fill="none" />
+
+  <!-- Emoji 2: occhiali da sole -->
+  <circle cx="176" cy="100" r="24" fill="#FFEB3B" stroke="black" stroke-width="2" />
+  <rect x="164" y="90" width="8" height="8" fill="black" />
+  <rect x="180" y="90" width="8" height="8" fill="black" />
+  <line x1="172" y1="94" x2="180" y2="94" stroke="black" stroke-width="2" />
+
+  <!-- Emoji 3: cuoricino -->
+  <path d="M128 168 C128 158, 144 158, 144 168 C144 178, 128 186, 128 186 C128 186, 112 178, 112 168 C112 158, 128 158, 128 168" fill="#E91E63" stroke="black" stroke-width="2" />
+
+  <!-- Testo -->
+  <text x="128" y="230" font-family="Arial Black" font-size="20" fill="black" text-anchor="middle">
+    STICKERS / EMOJIS
+  </text>
+</svg>

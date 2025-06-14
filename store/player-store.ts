@@ -1,0 +1,498 @@
+import { create } from 'zustand';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
+import { FFmpegKit } from 'ffmpeg-kit-react-native';
+import { Alert } from 'react-native';
+
+type ModeType = 'Audio' | 'Video' | 'Image' | 'Meme' | 'AI' | 'AUDIO' | 'VIDEO' | 'IMAGE' | 'MEME' | 'AI';
+
+// Tipo per l'ultima creazione
+type LastCreation = {
+  id: string;
+  name: string;
+  type: ModeType;
+  uri: string;
+  timestamp: number;
+  effects?: string[];
+} | null;
+
+type PlayerStore = {
+  mode: ModeType;
+  setMode: (newMode: ModeType) => void;
+  
+  // Proprietà Video
+  videoUri: string | null;
+  originalVideoUri: string | null; // Video originale prima degli effetti
+  setVideoUri: (uri: string | null) => void;
+  setOriginalVideoUri: (uri: string | null) => void;
+  resetVideoUri: () => void;
+  
+  // Proprietà Audio
+  audioUri: string | null;
+  setAudioUri: (uri: string | null) => void;
+  resetAudioUri: () => void;
+  
+  // Preview Audio
+  previewAudioUri: string | null;
+  setPreviewAudioUri: (uri: string | null) => void;
+  isPreviewPlaying: boolean;
+  setPreviewPlaying: (playing: boolean) => void;
+  
+  // Audio pending (da applicare)
+  pendingAudioUri: string | null;
+  setPendingAudioUri: (uri: string | null) => void;
+  
+  // Proprietà Meme/Image
+  memeImageUri: string | null;
+  setMemeImageUri: (uri: string | null) => void;
+  resetMemeImageUri: () => void;
+  
+  // Playback
+  isPlaying: boolean;
+  togglePlay: () => void;
+  play: () => void;
+  pause: () => void;
+  stop: () => void;
+  goBack: () => void;
+  mediaLoaded: boolean;
+  setMediaLoaded: (loaded: boolean) => void;
+  volume: number;
+  setVolume: (vol: number) => void;
+  increaseVolume: (amount: number) => void;
+  decreaseVolume: (amount: number) => void;
+  speed: number;
+  setSpeed: (spd: number) => void;
+  increaseSpeed: (amount: number) => void;
+  decreaseSpeed: (amount: number) => void;
+  currentTime: number;
+  setCurrentTime: (time: number) => void;
+  duration: number;
+  setDuration: (dur: number) => void;
+  
+  // Editing
+  isEditing: boolean;
+  setEditing: (isEditing: boolean) => void;
+  
+  // Camera
+  isCameraVisible: boolean;
+  setCameraVisible: (isVisible: boolean) => void;
+  
+  // Registrazione
+  isRecording: boolean;
+  recordingTime: number;
+  startRecording: () => void;
+  stopRecording: () => void;
+  toggleRecording: () => void;
+  setRecordingTime: (time: number) => void;
+  
+  // FX Mode e filtro effetti
+  effectsFilterMode: ModeType;
+  setEffectsFilterMode: (mode: ModeType) => void;
+  originMode: ModeType | null; // Modalità di origine quando MODIFICA è attivo
+  setOriginMode: (mode: ModeType | null) => void;
+  
+  // Media Library
+  loadMediaFromLibrary: (forcedMode?: string) => Promise<void>;
+  
+  // Effetti
+  activeEffects: string[];
+  toggleEffect: (effectId: string) => void;
+  addEffect: (effectId: string) => void;
+  removeEffect: (effectId: string) => void;
+  clearEffects: () => void;
+  getActiveEffectsNames: () => string[];
+  
+  // Tracking modifiche applicate
+  hasAppliedChanges: boolean;
+  setHasAppliedChanges: (hasChanges: boolean) => void;
+  appliedVolume: number;
+  appliedSpeed: number;
+  setAppliedSettings: (volume: number, speed: number) => void;
+  
+  // Doppio-tap APPLICA
+  isInPlayer: boolean;
+  setIsInPlayer: (inPlayer: boolean) => void;
+  
+  // Combinazione media
+  hasCombination: boolean;
+  setHasCombination: (hasCombination: boolean) => void;
+  
+  // Auto-lock player
+  isPlayerLocked: boolean;
+  setPlayerLocked: (locked: boolean) => void;
+  
+  // Ultima creazione
+  lastCreation: LastCreation;
+  recentCreations: LastCreation[];
+  setLastCreation: (creation: LastCreation) => void;
+  getLastCreation: () => LastCreation;
+  getRecentCreations: () => LastCreation[];
+  
+  // Fusione Meme + Audio
+  fuseMemeWithAudio: () => Promise<string | null>;
+};
+
+export const usePlayerStore = create<PlayerStore>((set, get) => ({
+  mode: 'MEME', // Default modalità sempre attiva
+
+  setMode: (newMode) => {
+    // Garantisce che ci sia sempre una modalità attiva
+    if (newMode && newMode.trim() !== '') {
+      set(() => ({
+        mode: newMode,
+      }));
+    }
+  },
+    
+  // Proprietà Video
+  videoUri: null,
+  originalVideoUri: null,
+  setVideoUri: (uri) => set({ 
+    videoUri: uri,
+    hasAppliedChanges: false,
+    appliedVolume: 80,
+    appliedSpeed: 100,
+    isPlayerLocked: uri !== null // Auto-lock quando caricato
+  }),
+  setOriginalVideoUri: (uri) => set({ originalVideoUri: uri }),
+  resetVideoUri: () => set({ videoUri: null, originalVideoUri: null }),
+  
+  // Proprietà Audio
+  audioUri: null,
+  setAudioUri: (uri) => set({ 
+    audioUri: uri,
+    hasAppliedChanges: false,
+    appliedVolume: 80,
+    appliedSpeed: 100,
+    isPlayerLocked: uri !== null // Auto-lock quando caricato
+  }),
+  resetAudioUri: () => set({ audioUri: null }),
+  
+  // Preview Audio
+  previewAudioUri: null,
+  setPreviewAudioUri: (uri) => set({ previewAudioUri: uri }),
+  isPreviewPlaying: false,
+  setPreviewPlaying: (playing) => set({ isPreviewPlaying: playing }),
+  
+  // Audio pending (da applicare)
+  pendingAudioUri: null,
+  setPendingAudioUri: (uri) => set({ pendingAudioUri: uri }),
+  
+  // Proprietà Meme/Image
+  memeImageUri: null,
+  setMemeImageUri: (uri) => set({ 
+    memeImageUri: uri,
+    hasAppliedChanges: false,
+    appliedVolume: 80,
+    appliedSpeed: 100,
+    isPlayerLocked: uri !== null // Auto-lock quando caricato
+  }),
+  resetMemeImageUri: () => set({ memeImageUri: null }),
+  
+  // Playback
+  isPlaying: false,
+  togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
+  play: () => set({ isPlaying: true }),
+  pause: () => set({ isPlaying: false }),
+  stop: () => set({ isPlaying: false, currentTime: 0 }),
+  // Torna indietro (scarica il media corrente)
+  goBack: () => {
+    const currentMode = get().mode;
+    // Reset in base alla modalità attuale
+    if (currentMode === 'VIDEO' || currentMode === 'AUDIO' || currentMode === 'MEME') {
+      set({ 
+        isPlaying: false,
+        currentTime: 0,
+        // Reset del media in base alla modalità
+        videoUri: currentMode === 'VIDEO' ? null : get().videoUri,
+        audioUri: currentMode === 'AUDIO' ? null : get().audioUri,
+        memeImageUri: currentMode === 'MEME' ? null : get().memeImageUri,
+      });
+    }
+  },
+  mediaLoaded: false,
+  setMediaLoaded: (loaded) => set({ mediaLoaded: loaded }),
+  volume: 80, // 0-100
+  setVolume: (vol) => set({ volume: Math.max(0, Math.min(100, vol)) }),
+  increaseVolume: (amount) => set((state) => ({ 
+    volume: Math.min(100, state.volume + amount) 
+  })),
+  decreaseVolume: (amount) => set((state) => ({ 
+    volume: Math.max(0, state.volume - amount) 
+  })),
+  speed: 100, // percentuale (100 = 1x)
+  setSpeed: (spd) => set({ speed: Math.max(25, Math.min(200, spd)) }),
+  increaseSpeed: (amount) => set((state) => ({ 
+    speed: Math.min(200, state.speed + amount) 
+  })),
+  decreaseSpeed: (amount) => set((state) => ({ 
+    speed: Math.max(25, state.speed - amount) 
+  })),
+  currentTime: 0,
+  setCurrentTime: (time) => set({ currentTime: time }),
+  duration: 0,
+  setDuration: (dur) => set({ duration: dur }),
+  
+  // Editing
+  isEditing: false,
+  setEditing: (isEditing) => set({ isEditing }),
+  
+  // Camera
+  isCameraVisible: false,
+  setCameraVisible: (isVisible) => set({ isCameraVisible: isVisible }),
+  
+  // Registrazione
+  isRecording: false,
+  recordingTime: 0,
+  startRecording: () => set({ isRecording: true, recordingTime: 0 }),
+  stopRecording: () => set({ isRecording: false, recordingTime: 0 }),
+  toggleRecording: () => set((state) => ({ 
+    isRecording: !state.isRecording,
+    recordingTime: !state.isRecording ? 0 : state.recordingTime 
+  })),
+  setRecordingTime: (time) => set({ recordingTime: time }),
+  
+  // FX Mode e filtro effetti
+  effectsFilterMode: 'MEME',
+  setEffectsFilterMode: (mode) => set({ effectsFilterMode: mode }),
+  originMode: null,
+  setOriginMode: (mode) => set({ originMode: mode }),
+  
+  // Media Library
+  loadMediaFromLibrary: async (forcedMode?: string) => {
+    const currentMode = forcedMode || get().mode;
+    try {
+      
+      // Per AUDIO usa DocumentPicker per accedere alla cartella Music
+      if (currentMode.toUpperCase() === 'AUDIO') {
+        const result = await DocumentPicker.getDocumentAsync({
+          type: 'audio/*',
+          copyToCacheDirectory: true,
+        });
+        
+        if (!result.canceled && result.assets.length > 0) {
+          const selectedAsset = result.assets[0];
+          get().setAudioUri(selectedAsset.uri);
+          
+          // Registra l'ultima creazione
+          get().setLastCreation({
+            id: Date.now().toString(),
+            name: selectedAsset.name || `Audio ${new Date().toLocaleTimeString()}`,
+            type: 'AUDIO',
+            uri: selectedAsset.uri,
+            timestamp: Date.now(),
+            effects: get().activeEffects.length > 0 ? [...get().activeEffects] : undefined
+          });
+        }
+        return;
+      }
+      
+      // Per VIDEO, IMAGE, MEME usa ImagePicker
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permesso negato', 'Consenti l\'accesso alla libreria per selezionare i media');
+        return;
+      }
+      
+      let mediaType = ImagePicker.MediaTypeOptions.All;
+      if (currentMode.toUpperCase() === 'VIDEO') {
+        mediaType = ImagePicker.MediaTypeOptions.Videos;
+      } else if (currentMode.toUpperCase() === 'IMAGE' || currentMode.toUpperCase() === 'MEME') {
+        mediaType = ImagePicker.MediaTypeOptions.Images;
+      }
+      
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: mediaType,
+        allowsEditing: false,
+        quality: 0.8,
+      });
+      
+      if (!result.canceled && result.assets.length > 0) {
+      const selectedAsset = result.assets[0];
+      
+      if (currentMode.toUpperCase() === 'VIDEO') {
+      // Salva sia il video corrente che quello originale
+            get().setVideoUri(selectedAsset.uri);
+            get().setOriginalVideoUri(selectedAsset.uri);
+          
+          // Registra l'ultima creazione
+          get().setLastCreation({
+            id: Date.now().toString(),
+            name: `Video ${new Date().toLocaleTimeString()}`,
+            type: 'VIDEO',
+            uri: selectedAsset.uri,
+            timestamp: Date.now(),
+            effects: get().activeEffects.length > 0 ? [...get().activeEffects] : undefined
+          });
+        } else if (currentMode.toUpperCase() === 'IMAGE' || currentMode.toUpperCase() === 'MEME') {
+          get().setMemeImageUri(selectedAsset.uri);
+          
+          // Registra l'ultima creazione
+          get().setLastCreation({
+            id: Date.now().toString(),
+            name: `Meme ${new Date().toLocaleTimeString()}`,
+            type: 'MEME',
+            uri: selectedAsset.uri,
+            timestamp: Date.now(),
+            effects: get().activeEffects.length > 0 ? [...get().activeEffects] : undefined
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Errore nella selezione media:', error);
+      Alert.alert('Errore', 'Si è verificato un errore durante la selezione del media');
+    }
+  },
+  
+  // Effetti
+  activeEffects: [],
+  toggleEffect: (effectId) => set((state) => ({
+    activeEffects: state.activeEffects.includes(effectId)
+      ? state.activeEffects.filter(id => id !== effectId)
+      : [...state.activeEffects, effectId]
+  })),
+  addEffect: (effectId) => set((state) => ({
+    activeEffects: state.activeEffects.includes(effectId)
+      ? state.activeEffects
+      : [...state.activeEffects, effectId]
+  })),
+  removeEffect: (effectId) => set((state) => ({
+    activeEffects: state.activeEffects.filter(id => id !== effectId)
+  })),
+  clearEffects: () => set({ activeEffects: [] }),
+  
+  // Funzione per ottenere i nomi degli effetti attivi
+  getActiveEffectsNames: () => {
+    return get().activeEffects;
+  },
+  
+  // Tracking modifiche applicate
+  hasAppliedChanges: false,
+  setHasAppliedChanges: (hasChanges) => set({ hasAppliedChanges: hasChanges }),
+  appliedVolume: 80,
+  appliedSpeed: 100,
+  setAppliedSettings: (volume, speed) => set({ 
+    appliedVolume: volume, 
+    appliedSpeed: speed,
+    hasAppliedChanges: true 
+  }),
+  
+  // Doppio-tap APPLICA
+  isInPlayer: false,
+  setIsInPlayer: (inPlayer) => set({ isInPlayer: inPlayer }),
+  
+  // Combinazione media
+  hasCombination: false,
+  setHasCombination: (hasCombination) => set({ hasCombination: hasCombination }),
+  
+  // Auto-lock player
+  isPlayerLocked: false,
+  setPlayerLocked: (locked) => set({ isPlayerLocked: locked }),
+  
+  // Ultima creazione
+  lastCreation: null,
+  recentCreations: [],
+  
+  setLastCreation: (creation) => {
+    // Aggiorna l'ultima creazione
+    set({ lastCreation: creation });
+    
+    // Aggiorna l'array delle creazioni recenti (massimo 3)
+    set((state) => {
+      // Crea un nuovo array con la nuova creazione all'inizio
+      const newRecentCreations = [creation];
+      
+      // Aggiungi le creazioni precedenti (fino a un massimo di 2 aggiuntive)
+      if (state.recentCreations.length > 0) {
+        // Filtra per evitare duplicati (stessa URI)
+        const existingCreations = state.recentCreations.filter(
+          item => item && creation && item.uri !== creation.uri
+        );
+        
+        // Aggiungi fino a 2 delle creazioni precedenti
+        newRecentCreations.push(...existingCreations.slice(0, 2));
+      }
+      
+      return { recentCreations: newRecentCreations };
+    });
+  },
+  
+  getLastCreation: () => {
+    return get().lastCreation;
+  },
+  
+  getRecentCreations: () => {
+    return get().recentCreations;
+  },
+  
+  // Fusione Meme + Audio → Video MP4
+  fuseMemeWithAudio: async () => {
+    const { memeImageUri, pendingAudioUri } = get();
+    
+    if (!memeImageUri) {
+      console.log('❌ Nessun meme caricato');
+      return null;
+    }
+    
+    try {
+      // Path audio asset (1.mp3)
+      const audioPath = pendingAudioUri || 'assets/audio/1.mp3';
+      
+      // Output path per video
+      const outputPath = `${FileSystem.documentDirectory}meme_video_${Date.now()}.mp4`;
+      
+      console.log('🎬 Iniziando fusione:', { memeImageUri, audioPath, outputPath });
+      
+      // Comando FFmpeg per unire immagine + audio
+      const ffmpegCommand = `-loop 1 -i "${memeImageUri}" -i "${audioPath}" -c:v libx264 -tune stillimage -c:a aac -b:a 192k -pix_fmt yuv420p -t 30 "${outputPath}"`;
+      
+      // Esegui FFmpeg
+      const session = await FFmpegKit.execute(ffmpegCommand);
+      const returnCode = await session.getReturnCode();
+      
+      if (returnCode.isValueSuccess()) {
+        console.log('✅ Fusione completata:', outputPath);
+        
+        // Salva in galleria VIDEO
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status === 'granted') {
+          await MediaLibrary.createAssetAsync(outputPath);
+          console.log('📱 Video salvato in galleria');
+        }
+        
+        // Aggiorna store: sostituisce nel player
+        set({
+          videoUri: outputPath,
+          memeImageUri: null, // Rimuove meme (ora è video)
+          pendingAudioUri: null, // Rimuove audio pending
+          hasCombination: false,
+          mode: 'VIDEO' // Switcha a modalità video
+        });
+        
+        // Registra come ultima creazione VIDEO
+        const newCreation = {
+          id: Date.now().toString(),
+          name: `Meme Video ${new Date().toLocaleTimeString()}`,
+          type: 'VIDEO' as ModeType,
+          uri: outputPath,
+          timestamp: Date.now()
+        };
+        
+        get().setLastCreation(newCreation);
+        
+        return outputPath;
+      } else {
+        console.error('❌ Errore FFmpeg:', returnCode);
+        Alert.alert('Errore', 'Errore durante la creazione del video');
+        return null;
+      }
+      
+    } catch (error) {
+      console.error('❌ Errore fusione:', error);
+      Alert.alert('Errore', 'Errore durante la fusione');
+      return null;
+    }
+  },
+}));

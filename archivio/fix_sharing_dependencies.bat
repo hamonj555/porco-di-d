@@ -1,0 +1,19 @@
+@echo off
+echo Fixing expo-sharing dependencies...
+
+echo Updating package.json with proper resolutions...
+
+echo Cleaning node_modules folder...
+rmdir /s /q node_modules
+
+echo Cleaning npm cache...
+npm cache clean --force
+
+echo Installing dependencies with force flag...
+npm install --force
+
+echo Installing expo-sharing with force flag...
+npx expo install expo-sharing --force
+
+echo Dependencies fixed!
+pause

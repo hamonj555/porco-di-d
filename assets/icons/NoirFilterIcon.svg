@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Faccia stilizzata -->
+  <circle cx="128" cy="112" r="40" fill="#FEEBCB" stroke="black" stroke-width="4" />
+
+  <!-- Maschera nera stile noir -->
+  <ellipse cx="128" cy="112" rx="32" ry="12" fill="black" />
+
+  <!-- Cappello stile detective -->
+  <rect x="96" y="60" width="64" height="20" rx="4" fill="#333" stroke="black" stroke-width="2" />
+  <rect x="80" y="50" width="96" height="14" rx="4" fill="#333" stroke="black" stroke-width="2" />
+
+  <!-- Testo -->
+  <text x="128" y="230" font-family="Arial Black" font-size="20" fill="black" text-anchor="middle">
+    NOIR FILTER
+  </text>
+</svg>

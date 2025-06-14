@@ -1,0 +1,93 @@
+import React from 'react';
+import { View, StyleSheet } from 'react-native';
+import VideoPlayer from '@/types/VideoPlayer';
+import AudioPlayer from './AudioPlayer';
+import MemeImageViewer from './MemeImageViewer';
+import { usePlayerStore } from '@/store/player-store';
+
+interface PlayerHubProps {
+  onToggleFullscreen?: (isFullscreen: boolean) => void;
+  activeVideoEffects?: string[];
+}
+
+const PlayerHub: React.FC<PlayerHubProps> = ({ onToggleFullscreen, activeVideoEffects }) => {
+  const { mode, videoUri, audioUri, memeImageUri } = usePlayerStore();
+  
+  // Determina quale player è attivo basandosi sulla modalità corrente
+  const isVideoActive = mode === 'VIDEO';
+  const isAudioActive = mode === 'AUDIO';
+  const isMemeActive = mode === 'MEME' || mode === 'IMAGE';
+  
+  return (
+    <View style={styles.container}>
+      {/* Video Player - sempre montato */}
+      <View style={[
+        styles.playerContainer, 
+        !isVideoActive && styles.hidden
+      ]}>
+        {videoUri && (
+          <VideoPlayer 
+            onToggleFullscreen={onToggleFullscreen}
+            activeEffects={activeVideoEffects}
+          />
+        )}
+      </View>
+      
+      {/* Audio Player - sempre montato */}
+      <View style={[
+        styles.playerContainer, 
+        !isAudioActive && styles.hidden
+      ]}>
+        {audioUri && <AudioPlayer />}
+      </View>
+      
+      {/* Meme Viewer - sempre montato */}
+      <View style={[
+        styles.playerContainer, 
+        !isMemeActive && styles.hidden
+      ]}>
+        {memeImageUri && (
+          <MemeImageViewer 
+            imageUri={memeImageUri}
+            onToggleFullscreen={onToggleFullscreen}
+          />
+        )}
+      </View>
+      
+      {/* Placeholder quando non c'è contenuto */}
+      {!videoUri && !audioUri && !memeImageUri && (
+        <View style={styles.placeholderContainer}>
+          {/* StatusDisplay gestirà il placeholder */}
+        </View>
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  playerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  hidden: {
+    display: 'none', // Nasconde ma non smonta il componente
+  },
+  placeholderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
+
+export default PlayerHub;
