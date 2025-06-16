@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "expo start --tunnel",
+    "start": "node server.js",
+    "dev": "expo start --tunnel",
     "start-web": "expo start --web --tunnel",
     "start-web-dev": "DEBUG=expo* expo start --web --tunnel",
     "android": "expo run:android",
@@ -65,7 +66,10 @@
     "react-native-vision-camera-face-detector": "^1.8.3",
     "react-native-web": "~0.19.13",
     "react-native-worklets-core": "^1.5.0",
-    "zustand": "^4.4.7"
+    "zustand": "^4.4.7",
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.23.3",

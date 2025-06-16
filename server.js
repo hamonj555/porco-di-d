@@ -194,8 +194,11 @@ app.use((error, req, res, next) => {
 });
 
 // Start server
-const PORT = 8888;
+const PORT = process.env.PORT || 8888;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server Node.js attivo su porta ${PORT}`);
-  console.log(`📡 Base URL: https://5ki4hsdo04b1ng-8888.proxy.runpod.net`);
+  const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN 
+    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` 
+    : `http://localhost:${PORT}`;
+  console.log(`📡 Base URL: ${baseUrl}`);
 });

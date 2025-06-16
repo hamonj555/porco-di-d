@@ -92,7 +92,9 @@ module.exports = {
     eas: {
       projectId: '4eea8904-37cf-419b-b2f6-5fb202d7b40a',
     },
-    // URL del tuo backend FastAPI esposto su RunPod
-    apiBaseUrl: 'https://5ki4hsdo04b1ng-8888.proxy.runpod.net'
+    // URL del backend sarà generato automaticamente da Railway
+    apiBaseUrl: process.env.RAILWAY_PUBLIC_DOMAIN 
+      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` 
+      : 'http://localhost:8888'
   },
 };
