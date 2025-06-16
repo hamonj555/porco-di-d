@@ -1,4 +1,4 @@
-// app.config.js – versione corretta (sintassi valida)
+// app.config.js – versione corretta con API base URL
 
 module.exports = {
   name: 'MOCKED',
@@ -40,7 +40,7 @@ module.exports = {
       'READ_EXTERNAL_STORAGE',
       'WRITE_EXTERNAL_STORAGE',
     ],
-  }, // 👈  COMMA IMPORTANTE – mancava, ora la sintassi è corretta
+  },
 
   web: {
     favicon: './assets/favicon.png',
@@ -67,11 +67,7 @@ module.exports = {
         cameraPermission: "L'app richiede l'accesso alla fotocamera per registrare video e audio",
       },
     ],
-
-    ['@config-plugins/ffmpeg-kit-react-native', {
-      package: 'full-gpl'
-    }],
-
+    ['@config-plugins/ffmpeg-kit-react-native', { package: 'full-gpl' }],
     [
       'react-native-vision-camera',
       {
@@ -79,10 +75,6 @@ module.exports = {
         microphonePermissionText: "L'app richiede l'accesso al microfono per registrare audio",
       },
     ],
-
-    // --------------
-    // Ultimo plugin ➜ forza min/compile/target SDK + fix splashscreen
-    // --------------
     [
       'expo-build-properties',
       {
@@ -100,5 +92,7 @@ module.exports = {
     eas: {
       projectId: '4eea8904-37cf-419b-b2f6-5fb202d7b40a',
     },
+    // URL del tuo backend FastAPI esposto su RunPod
+    apiBaseUrl: 'https://5ki4hsdo04b1ng-8888.proxy.runpod.net'
   },
 };

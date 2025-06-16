@@ -18,6 +18,22 @@ type LastCreation = {
   effects?: string[];
 } | null;
 
+// Tipo per le azioni undo
+type UndoAction = {
+  type: 'LOAD_MEDIA' | 'ADD_EFFECT' | 'REMOVE_EFFECT' | 'VOLUME_CHANGE' | 'SPEED_CHANGE' | 'COMBINE_MEDIA' | 'APPLY_CHANGES';
+  timestamp: number;
+  data: {
+    videoUri?: string | null;
+    audioUri?: string | null;
+    memeImageUri?: string | null;
+    pendingAudioUri?: string | null;
+    activeEffects?: string[];
+    volume?: number;
+    speed?: number;
+    mode?: ModeType;
+  };
+};
+
 type PlayerStore = {
   mode: ModeType;
   setMode: (newMode: ModeType) => void;
@@ -132,6 +148,14 @@ type PlayerStore = {
   
   // Fusione Meme + Audio
   fuseMemeWithAudio: () => Promise<string | null>;
+  
+  // Sistema Undo
+  undoStack: UndoAction[];
+  addUndoAction: (action: UndoAction) => void;
+  undo: () => void;
+  canUndo: () => boolean;
+  clearUndoStack: () => void;
+  saveCurrentState: (actionType: UndoAction['type']) => void;
 };
 
 export const usePlayerStore = create<PlayerStore>((set, get) => ({
@@ -149,25 +173,31 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   // Proprietà Video
   videoUri: null,
   originalVideoUri: null,
-  setVideoUri: (uri) => set({ 
-    videoUri: uri,
-    hasAppliedChanges: false,
-    appliedVolume: 80,
-    appliedSpeed: 100,
-    isPlayerLocked: uri !== null // Auto-lock quando caricato
-  }),
+  setVideoUri: (uri) => {
+    get().saveCurrentState('LOAD_MEDIA');
+    set({ 
+      videoUri: uri,
+      hasAppliedChanges: false,
+      appliedVolume: 80,
+      appliedSpeed: 100,
+      isPlayerLocked: uri !== null // Auto-lock quando caricato
+    });
+  },
   setOriginalVideoUri: (uri) => set({ originalVideoUri: uri }),
   resetVideoUri: () => set({ videoUri: null, originalVideoUri: null }),
   
   // Proprietà Audio
   audioUri: null,
-  setAudioUri: (uri) => set({ 
-    audioUri: uri,
-    hasAppliedChanges: false,
-    appliedVolume: 80,
-    appliedSpeed: 100,
-    isPlayerLocked: uri !== null // Auto-lock quando caricato
-  }),
+  setAudioUri: (uri) => {
+    get().saveCurrentState('LOAD_MEDIA');
+    set({ 
+      audioUri: uri,
+      hasAppliedChanges: false,
+      appliedVolume: 80,
+      appliedSpeed: 100,
+      isPlayerLocked: uri !== null // Auto-lock quando caricato
+    });
+  },
   resetAudioUri: () => set({ audioUri: null }),
   
   // Preview Audio
@@ -182,13 +212,16 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   
   // Proprietà Meme/Image
   memeImageUri: null,
-  setMemeImageUri: (uri) => set({ 
-    memeImageUri: uri,
-    hasAppliedChanges: false,
-    appliedVolume: 80,
-    appliedSpeed: 100,
-    isPlayerLocked: uri !== null // Auto-lock quando caricato
-  }),
+  setMemeImageUri: (uri) => {
+    get().saveCurrentState('LOAD_MEDIA');
+    set({ 
+      memeImageUri: uri,
+      hasAppliedChanges: false,
+      appliedVolume: 80,
+      appliedSpeed: 100,
+      isPlayerLocked: uri !== null // Auto-lock quando caricato
+    });
+  },
   resetMemeImageUri: () => set({ memeImageUri: null }),
   
   // Playback
@@ -197,25 +230,17 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   play: () => set({ isPlaying: true }),
   pause: () => set({ isPlaying: false }),
   stop: () => set({ isPlaying: false, currentTime: 0 }),
-  // Torna indietro (scarica il media corrente)
+  // Torna indietro (usa il sistema undo)
   goBack: () => {
-    const currentMode = get().mode;
-    // Reset in base alla modalità attuale
-    if (currentMode === 'VIDEO' || currentMode === 'AUDIO' || currentMode === 'MEME') {
-      set({ 
-        isPlaying: false,
-        currentTime: 0,
-        // Reset del media in base alla modalità
-        videoUri: currentMode === 'VIDEO' ? null : get().videoUri,
-        audioUri: currentMode === 'AUDIO' ? null : get().audioUri,
-        memeImageUri: currentMode === 'MEME' ? null : get().memeImageUri,
-      });
-    }
+    get().undo();
   },
   mediaLoaded: false,
   setMediaLoaded: (loaded) => set({ mediaLoaded: loaded }),
   volume: 80, // 0-100
-  setVolume: (vol) => set({ volume: Math.max(0, Math.min(100, vol)) }),
+  setVolume: (vol) => {
+    get().saveCurrentState('VOLUME_CHANGE');
+    set({ volume: Math.max(0, Math.min(100, vol)) });
+  },
   increaseVolume: (amount) => set((state) => ({ 
     volume: Math.min(100, state.volume + amount) 
   })),
@@ -223,7 +248,10 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     volume: Math.max(0, state.volume - amount) 
   })),
   speed: 100, // percentuale (100 = 1x)
-  setSpeed: (spd) => set({ speed: Math.max(25, Math.min(200, spd)) }),
+  setSpeed: (spd) => {
+    get().saveCurrentState('SPEED_CHANGE');
+    set({ speed: Math.max(25, Math.min(200, spd)) });
+  },
   increaseSpeed: (amount) => set((state) => ({ 
     speed: Math.min(200, state.speed + amount) 
   })),
@@ -348,11 +376,16 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   
   // Effetti
   activeEffects: [],
-  toggleEffect: (effectId) => set((state) => ({
-    activeEffects: state.activeEffects.includes(effectId)
-      ? state.activeEffects.filter(id => id !== effectId)
-      : [...state.activeEffects, effectId]
-  })),
+  toggleEffect: (effectId) => {
+    // Salva stato prima di modificare
+    get().saveCurrentState(get().activeEffects.includes(effectId) ? 'REMOVE_EFFECT' : 'ADD_EFFECT');
+    
+    set((state) => ({
+      activeEffects: state.activeEffects.includes(effectId)
+        ? state.activeEffects.filter(id => id !== effectId)
+        : [...state.activeEffects, effectId]
+    }));
+  },
   addEffect: (effectId) => set((state) => ({
     activeEffects: state.activeEffects.includes(effectId)
       ? state.activeEffects
@@ -494,5 +527,69 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       Alert.alert('Errore', 'Errore durante la fusione');
       return null;
     }
+  },
+  
+  // Sistema Undo
+  undoStack: [],
+  
+  addUndoAction: (action) => {
+    set((state) => ({
+      undoStack: [...state.undoStack, action].slice(-10) // Mantieni solo le ultime 10 azioni
+    }));
+  },
+  
+  saveCurrentState: (actionType) => {
+    const currentState = get();
+    const undoAction: UndoAction = {
+      type: actionType,
+      timestamp: Date.now(),
+      data: {
+        videoUri: currentState.videoUri,
+        audioUri: currentState.audioUri,
+        memeImageUri: currentState.memeImageUri,
+        pendingAudioUri: currentState.pendingAudioUri,
+        activeEffects: [...currentState.activeEffects],
+        volume: currentState.volume,
+        speed: currentState.speed,
+        mode: currentState.mode
+      }
+    };
+    get().addUndoAction(undoAction);
+  },
+  
+  undo: () => {
+    const { undoStack } = get();
+    if (undoStack.length === 0) {
+      console.log('🔄 Nessuna azione da annullare');
+      return;
+    }
+    
+    // Prendi l'ultima azione
+    const lastAction = undoStack[undoStack.length - 1];
+    console.log('🔄 Undo:', lastAction.type);
+    
+    // Ripristina lo stato precedente
+    set({
+      videoUri: lastAction.data.videoUri ?? get().videoUri,
+      audioUri: lastAction.data.audioUri ?? get().audioUri,
+      memeImageUri: lastAction.data.memeImageUri ?? get().memeImageUri,
+      pendingAudioUri: lastAction.data.pendingAudioUri ?? get().pendingAudioUri,
+      activeEffects: lastAction.data.activeEffects ?? get().activeEffects,
+      volume: lastAction.data.volume ?? get().volume,
+      speed: lastAction.data.speed ?? get().speed,
+      mode: lastAction.data.mode ?? get().mode,
+      isPlaying: false,
+      currentTime: 0,
+      // Rimuovi l'azione dallo stack
+      undoStack: undoStack.slice(0, -1)
+    });
+  },
+  
+  canUndo: () => {
+    return get().undoStack.length > 0;
+  },
+  
+  clearUndoStack: () => {
+    set({ undoStack: [] });
   },
 }));

@@ -36,16 +36,16 @@ const ApplyButton: React.FC<ApplyButtonProps> = ({ size = 30, style }) => {
         return;
       }
 
-      /* 2 ─ scegli la sorgente */
+      /* 2 ─ scegli la sorgente (priorità: video > audio > meme) */
       let uri: string | null = null;
       let mediaType = '';
-      if (mode.toUpperCase() === 'VIDEO' && videoUri) {
+      if (videoUri) {
         uri = videoUri;
         mediaType = 'video';
-      } else if (mode.toUpperCase() === 'AUDIO' && audioUri) {
+      } else if (audioUri) {
         uri = audioUri;
         mediaType = 'audio';
-      } else if ((mode.toUpperCase() === 'MEME' || mode.toUpperCase() === 'IMAGE') && memeImageUri) {
+      } else if (memeImageUri) {
         uri = memeImageUri;
         mediaType = 'image';
       }
@@ -163,16 +163,16 @@ const ApplyButton: React.FC<ApplyButtonProps> = ({ size = 30, style }) => {
     try {
       setIsProcessing(true);
       
-      // Ottieni l'URI corrente
+      // Ottieni l'URI corrente (priorità: video > audio > meme)
       let currentUri: string | null = null;
       let contentType = '';
-      if (mode.toUpperCase() === 'VIDEO' && videoUri) {
+      if (videoUri) {
         currentUri = videoUri;
         contentType = 'video';
-      } else if (mode.toUpperCase() === 'AUDIO' && audioUri) {
+      } else if (audioUri) {
         currentUri = audioUri;
         contentType = 'audio';
-      } else if ((mode.toUpperCase() === 'MEME' || mode.toUpperCase() === 'IMAGE') && memeImageUri) {
+      } else if (memeImageUri) {
         currentUri = memeImageUri;
         contentType = 'image';
       }

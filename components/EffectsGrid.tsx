@@ -16,11 +16,11 @@ const EffectsGrid = ({ isFXModeActive = false }: { isFXModeActive?: boolean }) =
   // Determina quale categoria di effetti mostrare
   const currentFilterMode = isFXModeActive ? effectsFilterMode : mode;
   
-  // Filtra gli effetti in base alla categoria
+  // Filtra gli effetti in base alla categoria per la visualizzazione
   const getFilteredEffects = () => {
     const filterMode = currentFilterMode.toUpperCase();
     
-    // Filtra gli effetti in base al tipo
+    // Filtra gli effetti in base al tipo per l'organizzazione visiva
     return effects.filter(effect => {
       if (filterMode === 'AUDIO') return effect.category === 'audio';
       if (filterMode === 'VIDEO') return effect.category === 'video';

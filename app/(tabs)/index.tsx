@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { StyleSheet, View, SafeAreaView, Text, TouchableOpacity, Platform, Alert, ActivityIndicator, ScrollView, Image } from "react-native";
+import { pingServer } from '../../src/apiClient';
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from "@expo/vector-icons"; // ✅ sostituisce lucide-react-native
@@ -49,7 +50,23 @@ export default function HomeScreen() {
   const [selectedAudioCategory, setSelectedAudioCategory] = useState('SOUND FX');
   const [selectedAICategory, setSelectedAICategory] = useState('AUDIO'); // NUOVO: per AI section
   const [navigationHistory, setNavigationHistory] = useState<Array<{type: string, value: any}>>([]);
+  const [pingStatus, setPingStatus] = useState<string>('Connecting...');
   const insets = useSafeAreaInsets();
+
+  // Test del ping al backend
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        const result = await pingServer();
+        setPingStatus(`Backend: ${result.message}`);
+        console.log('🟢 Backend connesso:', result);
+      } catch (error) {
+        setPingStatus('Backend: offline');
+        console.error('🔴 Backend error:', error);
+      }
+    };
+    testConnection();
+  }, []);
 
   // Funzione per condividere il contenuto attivo
   const handleSmartShare = async () => {
@@ -266,9 +283,12 @@ export default function HomeScreen() {
           </View>
         )}
         
-        <TouchableOpacity style={styles.infoButton}>
-          <Ionicons name="information-circle-outline" size={20} color={colors.text} />
-        </TouchableOpacity>
+        <View style={styles.infoContainer}>
+          <Text style={styles.pingStatus}>{pingStatus}</Text>
+          <TouchableOpacity style={styles.infoButton}>
+            <Ionicons name="information-circle-outline" size={20} color={colors.text} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.modeSelectorContainer}>
@@ -889,6 +909,16 @@ const styles = StyleSheet.create({
   },
   sharingButton: {
     opacity: 0.6,
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  pingStatus: {
+    fontSize: 10,
+    color: '#00FF00',
+    fontWeight: '600',
   },
   infoButton: {
     width: 32,
