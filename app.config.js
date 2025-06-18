@@ -1,10 +1,10 @@
-// app.config.js – versione corretta con API base URL
+// app.config.js – versione unificata per Expo Dev Client e backend Heroku
 
 module.exports = {
-  name: 'MOCKED',
-  slug: 'mocked',
+  name: 'Mocky',
+  slug: 'mocky',
   version: '1.0.0',
-  scheme: 'exp+mocked',
+  scheme: 'exp+mocky',
   orientation: 'portrait',
   icon: './assets/icon.png',
   splash: {
@@ -92,9 +92,7 @@ module.exports = {
     eas: {
       projectId: '4eea8904-37cf-419b-b2f6-5fb202d7b40a',
     },
-    // URL del backend sarà generato automaticamente da Railway
-    apiBaseUrl: process.env.RAILWAY_PUBLIC_DOMAIN 
-      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` 
-      : 'http://localhost:8888'
+    // URL del backend su Heroku, sovrascrivibile con variabile di ambiente API_BASE
+    apiBaseUrl: process.env.API_BASE || 'https://mocky-1-5c18b152b1ae.herokuapp.com'
   },
 };

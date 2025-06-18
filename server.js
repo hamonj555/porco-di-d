@@ -101,6 +101,11 @@ app.get('/effects', (req, res) => {
   });
 });
 
+// Route per la root, evita il 404 su "/"
+app.get('/', (req, res) => {
+  res.json({ message: 'Benvenuto sulla Mocky API!' });
+});
+
 app.post('/upload', upload.single('file'), (req, res) => {
   try {
     if (!req.file) {
