@@ -9,7 +9,8 @@
     "start-web": "expo start --web --tunnel",
     "start-web-dev": "DEBUG=expo* expo start --web --tunnel",
     "android": "expo run:android",
-    "ios": "expo run:ios"
+    "ios": "expo run:ios",
+    "test:api": "node --experimental-modules scripts/testApi.js"
   },
   "dependencies": {
     "@config-plugins/ffmpeg-kit-react-native": "^9.0.0",
@@ -19,6 +20,7 @@
     "@expo/vector-icons": "^14.0.2",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-navigation/native": "^7.0.14",
+    "axios": "^1.4.0",
     "expo": "~52.0.0",
     "expo-av": "~15.0.2",
     "expo-blur": "~14.0.1",
