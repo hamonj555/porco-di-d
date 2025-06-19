@@ -478,8 +478,8 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       
       console.log('🎬 Iniziando fusione:', { memeImageUri, audioPath, outputPath });
       
-      // Comando FFmpeg per unire immagine + audio
-      const ffmpegCommand = `-loop 1 -i "${memeImageUri}" -i "${audioPath}" -c:v libx264 -tune stillimage -c:a aac -b:a 192k -pix_fmt yuv420p -t 30 "${outputPath}"`;
+      // Comando FFmpeg ottimizzato per velocità
+      const ffmpegCommand = `-loop 1 -i "${memeImageUri}" -i "${audioPath}" -c:v libx264 -preset ultrafast -tune stillimage -c:a copy -shortest -t 30 "${outputPath}"`;
       
       // Esegui FFmpeg
       const session = await FFmpegKit.execute(ffmpegCommand);
@@ -491,8 +491,13 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
         // Salva in galleria VIDEO
         const { status } = await MediaLibrary.requestPermissionsAsync();
         if (status === 'granted') {
-          await MediaLibrary.createAssetAsync(outputPath);
-          console.log('📱 Video salvato in galleria');
+          try {
+            await MediaLibrary.createAssetAsync(outputPath);
+            console.log('📱 Video salvato in galleria');
+          } catch (saveError) {
+            console.warn('⚠️ Errore salvataggio galleria:', saveError);
+            // Continua comunque, il video è creato correttamente
+          }
         }
         
         // Aggiorna store: sostituisce nel player

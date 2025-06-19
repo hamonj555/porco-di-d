@@ -92,7 +92,7 @@ module.exports = {
     eas: {
       projectId: '4eea8904-37cf-419b-b2f6-5fb202d7b40a',
     },
-    // URL del backend su Heroku, sovrascrivibile con variabile di ambiente API_BASE
-    apiBaseUrl: process.env.API_BASE || 'https://mocky-1-5c18b152b1ae.herokuapp.com'
+    // URL del backend su RunPod, sovrascrivibile con variabile di ambiente API_BASE
+    apiBaseUrl: process.env.API_BASE || 'https://api.runpod.ai/v2/7aa7ya5nhxm6v7'
   },
 };

@@ -1,7 +1,7 @@
 // scripts/testApi.js
 import axios from 'axios';
 
-const BASE = process.env.APP_URL || 'https://<tuo-app-name>.herokuapp.com';
+const BASE = 'https://mocky-1-5c18b152b1ae.herokuapp.com';
 
 async function ping() {
   try {
