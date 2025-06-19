@@ -1,0 +1,34 @@
+{
+  "title": "Mocky Standard Effects",
+  "description": "GPU-accelerated video effects for Mocky app including zoom, glitch, VHS and meme fusion",
+  "type": "serverless",
+  "category": "video",
+  "iconUrl": "https://example.com/mocky-icon.png",
+  "config": {
+    "runsOn": "GPU",
+    "containerDiskInGb": 20,
+    "gpuCount": 1,
+    "gpuIds": "NVIDIA GeForce RTX 4090,RTX A4000",
+    "allowedCudaVersions": [
+      "12.8", "12.7", "12.6", "12.5", "12.4",
+      "12.3", "12.2", "12.1", "12.0"
+    ],
+    "env": [
+      {
+        "key": "EFFECT_TYPE",
+        "input": {
+          "name": "Effect Type",
+          "type": "string",
+          "description": "Type of video effect to apply",
+          "options": [
+            {"label": "Cinematic Zoom", "value": "cinematic_zoom"},
+            {"label": "Glitch Transition", "value": "glitch_transition"},
+            {"label": "VHS Effect", "value": "vhs_effect"},
+            {"label": "Meme Fusion", "value": "meme_fusion"}
+          ],
+          "default": "cinematic_zoom"
+        }
+      }
+    ]
+  }
+}
