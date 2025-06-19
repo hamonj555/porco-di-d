@@ -14,6 +14,7 @@ def handler(event):
     params = event['input'].get('params', {})
     
     print(f"🎬 Processing effect: {effect_type}")
+    print(f"🔧 GPU available: {has_gpu()}")
     
     if effect_type == 'cinematic_zoom':
         return process_zoom(media_data, params)
@@ -26,8 +27,16 @@ def handler(event):
     else:
         return {"error": f"Unknown effect: {effect_type}"}
 
+def has_gpu():
+    """Check if GPU is available"""
+    try:
+        result = subprocess.run(['nvidia-smi'], capture_output=True, text=True)
+        return result.returncode == 0
+    except:
+        return False
+
 def process_zoom(media_data, params):
-    """Cinematic zoom effect with GPU acceleration"""
+    """Cinematic zoom effect with GPU/CPU fallback"""
     try:
         # Decode base64 to temp file
         with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp_input:
@@ -37,15 +46,29 @@ def process_zoom(media_data, params):
         output_path = tempfile.mktemp(suffix='.mp4')
         zoom_factor = params.get("zoom", 1.2)
         
-        # FFmpeg GPU-accelerated command
-        cmd = [
-            'ffmpeg', '-hwaccel', 'cuda',
-            '-i', input_path,
-            '-vf', f'scale_cuda=iw*{zoom_factor}:ih*{zoom_factor}',
-            '-c:v', 'h264_nvenc',
-            '-preset', 'fast',
-            '-y', output_path
-        ]
+        # Try GPU first, fallback to CPU
+        gpu_available = has_gpu()
+        
+        if gpu_available:
+            # GPU command
+            cmd = [
+                'ffmpeg', '-hwaccel', 'cuda',
+                '-i', input_path,
+                '-vf', f'scale_cuda=iw*{zoom_factor}:ih*{zoom_factor}',
+                '-c:v', 'h264_nvenc',
+                '-preset', 'fast',
+                '-y', output_path
+            ]
+        else:
+            # CPU fallback command
+            cmd = [
+                'ffmpeg',
+                '-i', input_path,
+                '-vf', f'scale=iw*{zoom_factor}:ih*{zoom_factor}',
+                '-c:v', 'libx264',
+                '-preset', 'fast',
+                '-y', output_path
+            ]
         
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
@@ -63,14 +86,15 @@ def process_zoom(media_data, params):
             "success": True,
             "result": result_data,
             "effect": "cinematic_zoom",
-            "params": params
+            "params": params,
+            "gpu_used": gpu_available
         }
         
     except Exception as e:
         return {"error": str(e), "effect": "cinematic_zoom"}
 
 def process_glitch(media_data, params):
-    """Glitch transition effect"""
+    """Glitch transition effect with GPU/CPU fallback"""
     try:
         with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp_input:
             tmp_input.write(base64.b64decode(media_data))
@@ -79,13 +103,24 @@ def process_glitch(media_data, params):
         output_path = tempfile.mktemp(suffix='.mp4')
         intensity = params.get("intensity", 0.5)
         
-        cmd = [
-            'ffmpeg', '-hwaccel', 'cuda',
-            '-i', input_path,
-            '-vf', f'noise=alls={int(intensity*20)}:allf=t',
-            '-c:v', 'h264_nvenc',
-            '-y', output_path
-        ]
+        gpu_available = has_gpu()
+        
+        if gpu_available:
+            cmd = [
+                'ffmpeg', '-hwaccel', 'cuda',
+                '-i', input_path,
+                '-vf', f'noise=alls={int(intensity*20)}:allf=t',
+                '-c:v', 'h264_nvenc',
+                '-y', output_path
+            ]
+        else:
+            cmd = [
+                'ffmpeg',
+                '-i', input_path,
+                '-vf', f'noise=alls={int(intensity*20)}:allf=t',
+                '-c:v', 'libx264',
+                '-y', output_path
+            ]
         
         subprocess.run(cmd, check=True)
         
@@ -98,14 +133,15 @@ def process_glitch(media_data, params):
         return {
             "success": True,
             "result": result_data,
-            "effect": "glitch_transition"
+            "effect": "glitch_transition",
+            "gpu_used": gpu_available
         }
         
     except Exception as e:
         return {"error": str(e), "effect": "glitch_transition"}
 
 def process_vhs(media_data, params):
-    """VHS vintage effect"""
+    """VHS vintage effect with GPU/CPU fallback"""
     try:
         with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp_input:
             tmp_input.write(base64.b64decode(media_data))
@@ -113,13 +149,24 @@ def process_vhs(media_data, params):
         
         output_path = tempfile.mktemp(suffix='.mp4')
         
-        cmd = [
-            'ffmpeg', '-hwaccel', 'cuda',
-            '-i', input_path,
-            '-vf', 'curves=vintage,noise=alls=10:allf=t',
-            '-c:v', 'h264_nvenc',
-            '-y', output_path
-        ]
+        gpu_available = has_gpu()
+        
+        if gpu_available:
+            cmd = [
+                'ffmpeg', '-hwaccel', 'cuda',
+                '-i', input_path,
+                '-vf', 'curves=vintage,noise=alls=10:allf=t',
+                '-c:v', 'h264_nvenc',
+                '-y', output_path
+            ]
+        else:
+            cmd = [
+                'ffmpeg',
+                '-i', input_path,
+                '-vf', 'curves=vintage,noise=alls=10:allf=t',
+                '-c:v', 'libx264',
+                '-y', output_path
+            ]
         
         subprocess.run(cmd, check=True)
         
@@ -132,7 +179,8 @@ def process_vhs(media_data, params):
         return {
             "success": True,
             "result": result_data,
-            "effect": "vhs_effect"
+            "effect": "vhs_effect",
+            "gpu_used": gpu_available
         }
         
     except Exception as e:
