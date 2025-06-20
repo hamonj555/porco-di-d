@@ -55,7 +55,7 @@ def download_from_url(url):
         raise Exception(f"Failed to download from URL: {str(e)}")
 
 def process_zoom(media_data, params):
-    """Cinematic zoom effect with GPU/CPU fallback"""
+    """Cinematic zoom effect with GPU acceleration"""
     try:
         # Check if input is URL or base64
         if media_data.startswith(('http://', 'https://')):
@@ -80,14 +80,14 @@ def process_zoom(media_data, params):
         gpu_available = has_gpu()
         
         if gpu_available:
-            # GPU command
+            # GPU command with NPP scaling
             cmd = [
-                'ffmpeg', '-hwaccel', 'cuda',
-                '-i', input_path,
-                '-vf', f'scale_cuda=iw*{zoom_factor}:ih*{zoom_factor}',
-                '-c:v', 'h264_nvenc',
-                '-preset', 'fast',
-                '-y', output_path
+                "ffmpeg", "-hwaccel", "cuda",
+                "-hwaccel_output_format", "cuda",
+                "-i", input_path,
+                "-vf", f"hwupload_cuda,scale_npp=iw*{zoom_factor}:ih*{zoom_factor}",
+                "-c:v", "h264_nvenc", "-preset", "p3",
+                "-y", output_path
             ]
         else:
             # CPU fallback command
@@ -124,7 +124,7 @@ def process_zoom(media_data, params):
         return {"error": str(e), "effect": "cinematic_zoom"}
 
 def process_glitch(media_data, params):
-    """Glitch transition effect with GPU/CPU fallback"""
+    """Glitch transition effect with GPU acceleration"""
     try:
         # Check if input is URL or base64
         if media_data.startswith(('http://', 'https://')):
@@ -147,12 +147,14 @@ def process_glitch(media_data, params):
         gpu_available = has_gpu()
         
         if gpu_available:
+            # GPU command with NPP
             cmd = [
-                'ffmpeg', '-hwaccel', 'cuda',
-                '-i', input_path,
-                '-vf', f'noise=alls={int(intensity*20)}:allf=t',
-                '-c:v', 'h264_nvenc',
-                '-y', output_path
+                "ffmpeg", "-hwaccel", "cuda",
+                "-hwaccel_output_format", "cuda",
+                "-i", input_path,
+                "-vf", f"hwupload_cuda,noise=alls={int(intensity*20)}:allf=t",
+                "-c:v", "h264_nvenc", "-preset", "p3",
+                "-y", output_path
             ]
         else:
             cmd = [
@@ -182,7 +184,7 @@ def process_glitch(media_data, params):
         return {"error": str(e), "effect": "glitch_transition"}
 
 def process_vhs(media_data, params):
-    """VHS vintage effect with GPU/CPU fallback"""
+    """VHS vintage effect with GPU acceleration"""
     try:
         # Check if input is URL or base64
         if media_data.startswith(('http://', 'https://')):
@@ -204,12 +206,14 @@ def process_vhs(media_data, params):
         gpu_available = has_gpu()
         
         if gpu_available:
+            # GPU command with NPP
             cmd = [
-                'ffmpeg', '-hwaccel', 'cuda',
-                '-i', input_path,
-                '-vf', 'curves=vintage,noise=alls=10:allf=t',
-                '-c:v', 'h264_nvenc',
-                '-y', output_path
+                "ffmpeg", "-hwaccel", "cuda",
+                "-hwaccel_output_format", "cuda",
+                "-i", input_path,
+                "-vf", "hwupload_cuda,curves=vintage,noise=alls=10:allf=t",
+                "-c:v", "h264_nvenc", "-preset", "p3",
+                "-y", output_path
             ]
         else:
             cmd = [
