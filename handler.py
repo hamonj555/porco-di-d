@@ -107,7 +107,7 @@ def process_glitch(media_data, params):
         missing_padding = len(media_data) % 4
         if missing_padding:
             media_data += '=' * (4 - missing_padding)
-            
+        
         with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp_input:
             tmp_input.write(base64.b64decode(media_data))
             input_path = tmp_input.name
@@ -160,7 +160,7 @@ def process_vhs(media_data, params):
         missing_padding = len(media_data) % 4
         if missing_padding:
             media_data += '=' * (4 - missing_padding)
-            
+        
         with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp_input:
             tmp_input.write(base64.b64decode(media_data))
             input_path = tmp_input.name
