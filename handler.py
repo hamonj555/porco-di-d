@@ -3,6 +3,8 @@ import subprocess
 import base64
 import tempfile
 import os
+import requests
+from urllib.parse import urlparse
 
 def handler(event):
     """
@@ -10,7 +12,7 @@ def handler(event):
     Processes: zoom, glitch, vhs, filters
     """
     effect_type = event['input']['effect_type']
-    media_data = event['input']['media_data']  # base64
+    media_data = event['input']['media_data']  # base64 or URL
     params = event['input'].get('params', {})
     
     print(f"🎬 Processing effect: {effect_type}")
@@ -35,19 +37,41 @@ def has_gpu():
     except:
         return False
 
+def download_from_url(url):
+    """Download file from URL and return local path"""
+    try:
+        response = requests.get(url, timeout=60)
+        response.raise_for_status()
+        
+        # Get file extension from URL
+        parsed = urlparse(url)
+        ext = os.path.splitext(parsed.path)[1] or '.mp4'
+        
+        # Create temp file
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+            tmp.write(response.content)
+            return tmp.name
+    except Exception as e:
+        raise Exception(f"Failed to download from URL: {str(e)}")
+
 def process_zoom(media_data, params):
     """Cinematic zoom effect with GPU/CPU fallback"""
     try:
-        # Fix base64 padding
-        media_data = media_data.replace(' ', '+')
-        missing_padding = len(media_data) % 4
-        if missing_padding:
-            media_data += '=' * (4 - missing_padding)
-        
-        # Decode base64 to temp file
-        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp_input:
-            tmp_input.write(base64.b64decode(media_data))
-            input_path = tmp_input.name
+        # Check if input is URL or base64
+        if media_data.startswith(('http://', 'https://')):
+            # Download from URL
+            input_path = download_from_url(media_data)
+        else:
+            # Fix base64 padding
+            media_data = media_data.replace(' ', '+')
+            missing_padding = len(media_data) % 4
+            if missing_padding:
+                media_data += '=' * (4 - missing_padding)
+            
+            # Decode base64 to temp file
+            with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp_input:
+                tmp_input.write(base64.b64decode(media_data))
+                input_path = tmp_input.name
         
         output_path = tempfile.mktemp(suffix='.mp4')
         zoom_factor = params.get("zoom", 1.2)
@@ -102,15 +126,20 @@ def process_zoom(media_data, params):
 def process_glitch(media_data, params):
     """Glitch transition effect with GPU/CPU fallback"""
     try:
-        # Fix base64 padding
-        media_data = media_data.replace(' ', '+')
-        missing_padding = len(media_data) % 4
-        if missing_padding:
-            media_data += '=' * (4 - missing_padding)
-        
-        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp_input:
-            tmp_input.write(base64.b64decode(media_data))
-            input_path = tmp_input.name
+        # Check if input is URL or base64
+        if media_data.startswith(('http://', 'https://')):
+            # Download from URL
+            input_path = download_from_url(media_data)
+        else:
+            # Fix base64 padding
+            media_data = media_data.replace(' ', '+')
+            missing_padding = len(media_data) % 4
+            if missing_padding:
+                media_data += '=' * (4 - missing_padding)
+            
+            with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp_input:
+                tmp_input.write(base64.b64decode(media_data))
+                input_path = tmp_input.name
         
         output_path = tempfile.mktemp(suffix='.mp4')
         intensity = params.get("intensity", 0.5)
@@ -155,15 +184,20 @@ def process_glitch(media_data, params):
 def process_vhs(media_data, params):
     """VHS vintage effect with GPU/CPU fallback"""
     try:
-        # Fix base64 padding
-        media_data = media_data.replace(' ', '+')
-        missing_padding = len(media_data) % 4
-        if missing_padding:
-            media_data += '=' * (4 - missing_padding)
-        
-        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp_input:
-            tmp_input.write(base64.b64decode(media_data))
-            input_path = tmp_input.name
+        # Check if input is URL or base64
+        if media_data.startswith(('http://', 'https://')):
+            # Download from URL
+            input_path = download_from_url(media_data)
+        else:
+            # Fix base64 padding
+            media_data = media_data.replace(' ', '+')
+            missing_padding = len(media_data) % 4
+            if missing_padding:
+                media_data += '=' * (4 - missing_padding)
+            
+            with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp_input:
+                tmp_input.write(base64.b64decode(media_data))
+                input_path = tmp_input.name
         
         output_path = tempfile.mktemp(suffix='.mp4')
         
