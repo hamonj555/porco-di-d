@@ -5,6 +5,7 @@ import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import { FFmpegKit } from 'ffmpeg-kit-react-native';
 import { Alert } from 'react-native';
+import * as apiClient from '../src/apiClient';
 
 type ModeType = 'Audio' | 'Video' | 'Image' | 'Meme' | 'AI' | 'AUDIO' | 'VIDEO' | 'IMAGE' | 'MEME' | 'AI';
 
@@ -149,6 +150,9 @@ type PlayerStore = {
   // Fusione Meme + Audio
   fuseMemeWithAudio: () => Promise<string | null>;
   
+  // RunPod Effects
+  applyRunPodEffect: (effectType: string, mediaUri: string) => Promise<string | null>;
+  
   // Sistema Undo
   undoStack: UndoAction[];
   addUndoAction: (action: UndoAction) => void;
@@ -167,6 +171,110 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       set(() => ({
         mode: newMode,
       }));
+    }
+  },
+  
+  // RunPod Effects - Applica effetto tramite API
+  applyRunPodEffect: async (effectType: string, mediaUri: string) => {
+    try {
+      console.log('🎬 Applicando effetto RunPod:', effectType);
+      
+      let result: string | null = null;
+      
+      // Mappa effetti a funzioni API
+      switch (effectType) {
+        // Video Effects
+        case 'cinematic_zoom':
+          result = await apiClient.cinematicZoom(mediaUri);
+          break;
+        case 'glitch_transition':
+          result = await apiClient.glitchTransition(mediaUri);
+          break;
+        case 'vhs_effect':
+          result = await apiClient.vhsEffect(mediaUri);
+          break;
+        case 'meme_fusion':
+          result = await apiClient.memeFusion(mediaUri);
+          break;
+        case 'face_swap':
+          result = await apiClient.faceSwap(mediaUri);
+          break;
+        case 'beauty_filter':
+          result = await apiClient.beautyFilter(mediaUri);
+          break;
+        case 'lip_sync':
+          result = await apiClient.lipSync(mediaUri);
+          break;
+        case 'style_transfer':
+          result = await apiClient.styleTransfer(mediaUri);
+          break;
+        case 'bg_remove':
+          result = await apiClient.backgroundRemove(mediaUri);
+          break;
+        case 'sky_replace':
+          result = await apiClient.skyReplace(mediaUri);
+          break;
+          
+        // Audio Effects
+        case 'voice_cloning':
+          result = await apiClient.voiceCloning(mediaUri);
+          break;
+        case 'cartoon_voice':
+          result = await apiClient.cartoonVoice(mediaUri);
+          break;
+        case 'gender_swap':
+          result = await apiClient.genderSwap(mediaUri);
+          break;
+        case 'age_changer':
+          result = await apiClient.ageChanger(mediaUri);
+          break;
+        case 'vocal_isolation':
+          result = await apiClient.vocalIsolation(mediaUri);
+          break;
+        case 'autotune':
+          result = await apiClient.autoTune(mediaUri);
+          break;
+          
+        // Video Standard (10 nuovi)
+        case 'noir_filter':
+        case 'color_boost':
+        case 'sepia_filter':
+        case 'animated_titles':
+        case 'stickers_emojis':
+        case 'light_effects':
+        case 'invert_colors':
+          // Per ora usa cinematic_zoom come placeholder
+          result = await apiClient.cinematicZoom(mediaUri);
+          break;
+          
+        default:
+          console.warn('🚫 Effetto non riconosciuto:', effectType);
+          Alert.alert('Effetto non disponibile', `Effetto ${effectType} non ancora implementato`);
+          return null;
+      }
+      
+      if (result) {
+        console.log('✅ Effetto RunPod applicato:', result);
+        
+        // Aggiorna il media nel player con il risultato
+        if (effectType.includes('voice') || effectType.includes('audio') || effectType.includes('vocal') || effectType.includes('autotune')) {
+          // Effetti audio → aggiorna audioUri
+          set({ audioUri: result });
+        } else {
+          // Effetti video → aggiorna videoUri
+          set({ videoUri: result });
+        }
+        
+        return result;
+      } else {
+        Alert.alert('Errore', 'Effetto non applicato correttamente');
+        return null;
+      }
+      
+    } catch (error) {
+      console.error('❌ Errore effetto RunPod:', error);
+      Alert.alert('Errore', 'Si è verificato un errore durante l\'applicazione dell\'effetto');
+      return null;
     }
   },
     
@@ -380,11 +488,36 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     // Salva stato prima di modificare
     get().saveCurrentState(get().activeEffects.includes(effectId) ? 'REMOVE_EFFECT' : 'ADD_EFFECT');
     
+    const wasActive = get().activeEffects.includes(effectId);
+    
     set((state) => ({
       activeEffects: state.activeEffects.includes(effectId)
         ? state.activeEffects.filter(id => id !== effectId)
         : [...state.activeEffects, effectId]
     }));
+    
+    // Se l'effetto è stato aggiunto (non era attivo prima), applica RunPod
+    if (!wasActive) {
+      const { videoUri, audioUri, memeImageUri } = get();
+      const mediaUri = videoUri || audioUri || memeImageUri;
+      
+      if (mediaUri) {
+        // Tutti gli effetti ora usano direttamente i loro ID RunPod
+        const runPodEffects = [
+          // Audio AI
+          'voice_cloning', 'cartoon_voice', 'gender_swap', 'age_changer', 'vocal_isolation', 'autotune',
+          // Video AI  
+          'face_swap', 'beauty_filter', 'caption_meme', 'lip_sync', 'face_reenact', 'style_transfer', 'bg_remove', 'sky_replace',
+          // Video Standard
+          'cinematic_zoom', 'glitch_transition', 'vhs_effect', 'noir_filter', 'color_boost', 'sepia_filter', 'animated_titles', 'stickers_emojis', 'light_effects', 'invert_colors'
+        ];
+        
+        if (runPodEffects.includes(effectId)) {
+          console.log('🚀 Applicando effetto RunPod:', effectId);
+          get().applyRunPodEffect(effectId, mediaUri);
+        }
+      }
+    }
   },
   addEffect: (effectId) => set((state) => ({
     activeEffects: state.activeEffects.includes(effectId)
