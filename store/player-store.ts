@@ -5,10 +5,11 @@ import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import { FFmpegKit } from 'ffmpeg-kit-react-native';
 import { Alert } from 'react-native';
+// import * as apiClient from '../src/apiClient'; // Non più necessario
 
 // RunPod Configuration
 const RUNPOD_ENDPOINT = 'https://api.runpod.ai/v2/w5r8rvbpe3o5iu';
-const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY || 'PLACEHOLDER_KEY';
+const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY || 'YOUR_API_KEY_HERE';
 
 type ModeType = 'Audio' | 'Video' | 'Image' | 'Meme' | 'AI' | 'AUDIO' | 'VIDEO' | 'IMAGE' | 'MEME' | 'AI';
 
@@ -182,16 +183,16 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     try {
       console.log('🎬 Applicando effetto RunPod:', effectType);
       
-      // Converti media a base64
+      // Converti media a base64 con fix padding
       let mediaData = await FileSystem.readAsStringAsync(mediaUri, {
         encoding: FileSystem.EncodingType.Base64
       });
       
-      // Fix base64 padding (stesso fix del handler.py)
-      mediaData = mediaData.replace(' ', '+');
-      const missingPadding = mediaData.length % 4;
-      if (missingPadding) {
-        mediaData += '='.repeat(4 - missingPadding);
+      // Fix base64 padding corretto
+      mediaData = mediaData.replace(/\s/g, ''); // Rimuovi spazi
+      const padding = (4 - (mediaData.length % 4)) % 4;
+      if (padding > 0) {
+        mediaData += '='.repeat(padding);
       }
       
       // Chiama RunPod direttamente
