@@ -5,7 +5,10 @@ import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import { FFmpegKit } from 'ffmpeg-kit-react-native';
 import { Alert } from 'react-native';
-import * as apiClient from '../src/apiClient';
+
+// RunPod Configuration
+const RUNPOD_ENDPOINT = 'https://api.runpod.ai/v2/w5r8rvbpe3o5iu';
+const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY || 'PLACEHOLDER_KEY';
 
 type ModeType = 'Audio' | 'Video' | 'Image' | 'Meme' | 'AI' | 'AUDIO' | 'VIDEO' | 'IMAGE' | 'MEME' | 'AI';
 
@@ -174,99 +177,53 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     }
   },
   
-  // RunPod Effects - Applica effetto tramite API
+  // RunPod Effects - Applica effetto tramite API diretta
   applyRunPodEffect: async (effectType: string, mediaUri: string) => {
     try {
       console.log('🎬 Applicando effetto RunPod:', effectType);
       
-      let result: string | null = null;
+      // Converti media a base64
+      const mediaData = await FileSystem.readAsStringAsync(mediaUri, {
+        encoding: FileSystem.EncodingType.Base64
+      });
       
-      // Mappa effetti a funzioni API
-      switch (effectType) {
-        // Video Effects
-        case 'cinematic_zoom':
-          result = await apiClient.cinematicZoom(mediaUri);
-          break;
-        case 'glitch_transition':
-          result = await apiClient.glitchTransition(mediaUri);
-          break;
-        case 'vhs_effect':
-          result = await apiClient.vhsEffect(mediaUri);
-          break;
-        case 'meme_fusion':
-          result = await apiClient.memeFusion(mediaUri);
-          break;
-        case 'face_swap':
-          result = await apiClient.faceSwap(mediaUri);
-          break;
-        case 'beauty_filter':
-          result = await apiClient.beautyFilter(mediaUri);
-          break;
-        case 'lip_sync':
-          result = await apiClient.lipSync(mediaUri);
-          break;
-        case 'style_transfer':
-          result = await apiClient.styleTransfer(mediaUri);
-          break;
-        case 'bg_remove':
-          result = await apiClient.backgroundRemove(mediaUri);
-          break;
-        case 'sky_replace':
-          result = await apiClient.skyReplace(mediaUri);
-          break;
-          
-        // Audio Effects
-        case 'voice_cloning':
-          result = await apiClient.voiceCloning(mediaUri);
-          break;
-        case 'cartoon_voice':
-          result = await apiClient.cartoonVoice(mediaUri);
-          break;
-        case 'gender_swap':
-          result = await apiClient.genderSwap(mediaUri);
-          break;
-        case 'age_changer':
-          result = await apiClient.ageChanger(mediaUri);
-          break;
-        case 'vocal_isolation':
-          result = await apiClient.vocalIsolation(mediaUri);
-          break;
-        case 'autotune':
-          result = await apiClient.autoTune(mediaUri);
-          break;
-          
-        // Video Standard (10 nuovi)
-        case 'noir_filter':
-        case 'color_boost':
-        case 'sepia_filter':
-        case 'animated_titles':
-        case 'stickers_emojis':
-        case 'light_effects':
-        case 'invert_colors':
-          // Per ora usa cinematic_zoom come placeholder
-          result = await apiClient.cinematicZoom(mediaUri);
-          break;
-          
-        default:
-          console.warn('🚫 Effetto non riconosciuto:', effectType);
-          Alert.alert('Effetto non disponibile', `Effetto ${effectType} non ancora implementato`);
-          return null;
-      }
+      // Chiama RunPod direttamente
+      const response = await fetch(`${RUNPOD_ENDPOINT}/runsync`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${RUNPOD_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          input: {
+            effect_type: effectType,
+            media_data: mediaData,
+            params: {}
+          }
+        })
+      });
       
-      if (result) {
-        console.log('✅ Effetto RunPod applicato:', result);
+      const result = await response.json();
+      
+      if (result.output?.success) {
+        // Decodifica base64 result a file
+        const outputPath = `${FileSystem.documentDirectory}result_${Date.now()}.mp4`;
+        await FileSystem.writeAsStringAsync(outputPath, result.output.result, {
+          encoding: FileSystem.EncodingType.Base64
+        });
         
-        // Aggiorna il media nel player con il risultato
+        console.log('✅ Effetto RunPod applicato:', outputPath);
+        
+        // Aggiorna il media nel player
         if (effectType.includes('voice') || effectType.includes('audio') || effectType.includes('vocal') || effectType.includes('autotune')) {
-          // Effetti audio → aggiorna audioUri
-          set({ audioUri: result });
+          set({ audioUri: outputPath });
         } else {
-          // Effetti video → aggiorna videoUri
-          set({ videoUri: result });
+          set({ videoUri: outputPath });
         }
         
-        return result;
+        return outputPath;
       } else {
+        console.error('❌ RunPod error:', result);
         Alert.alert('Errore', 'Effetto non applicato correttamente');
         return null;
       }
