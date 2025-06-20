@@ -183,9 +183,16 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       console.log('🎬 Applicando effetto RunPod:', effectType);
       
       // Converti media a base64
-      const mediaData = await FileSystem.readAsStringAsync(mediaUri, {
+      let mediaData = await FileSystem.readAsStringAsync(mediaUri, {
         encoding: FileSystem.EncodingType.Base64
       });
+      
+      // Fix base64 padding (stesso fix del handler.py)
+      mediaData = mediaData.replace(' ', '+');
+      const missingPadding = mediaData.length % 4;
+      if (missingPadding) {
+        mediaData += '='.repeat(4 - missingPadding);
+      }
       
       // Chiama RunPod direttamente
       const response = await fetch(`${RUNPOD_ENDPOINT}/runsync`, {
